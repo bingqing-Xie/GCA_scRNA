@@ -13,25 +13,242 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(monocle)
+library(knitr)
+library(ggplot2)
+
+stem <- c( "LGR5", "ASCL2", "SMOC2", "RGMB", "OLFM4")
+goblet <- c("CLCA1", "SPDEF", "FCGBP", "ZG16", "MUC2")
+
+ec_markers=c("SLC12A2","OLFM4","APOC3","APOA4","APOA1","FABP6","FABP2","ANPEP","RBP2","ALDOB","DPEP1","HLA-DRB1","HLA-DRA","GSTA2","GSTA1","DMBT1","REG1A")
+
+goblet_markers=c("FFAR4","CD177","BEST2","KLK1","FCGBP","TFF1","ZG16","WFDC2","RETNLB","SPDEF","REG4","MUC2","TFF3","CLCA1","SPINK4","ITLN1")
+
+plotMonocleResults=function(monoObj,type="absorptive",cells="all"){
+    index=1
+    plist=list()
+    plist[[index]]=plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno1)
+    index=index+1
+    plist[[index]]=plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno2)
+    index=index+1
+    meta = pData(monoObj)
+    kable(table(meta$anno2,meta$State),caption="anno2 and State")
+    plist[[index]]==ggplot(meta,aes(y=anno1,x=Pseudotime,color=State))+geom_point()
+    index=index+1
+    plist[[index]]==ggplot(meta,aes(y=anno2,x=Pseudotime,color=State))+geom_point()
+    index=index+1
+    if(cells=="all"){
+    plist[[index]]==ggplot(meta,aes(y=inflammation_status,x=Pseudotime,color=State))+geom_point()
+    index=index+1
+    
+    }
+    plist[[index]]=plot_cell_trajectory(monoObj, markers = stem, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
+    index=index+1
+    if(type=="absorptive"){
+      plist[[index]]=plot_cell_trajectory(monoObj, markers = ec_markers, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
+    index=index+1
+    }
+    if(type=="goblet"){
+      
+    }
+    if(type=="other"){
+      
+    }
+    return(plist)
+}
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+# Trajectory {.tabset}
 
-```{r monocle}
-library(monocle)
+## Absorptive {.tabset}
+
+### All cells {.tabset}
+
+
+```{r,echo=FALSE,warning=FALSE}
 monoObj=readRDS("../../helmsley/TI_Aborptive/TI_epi_reclustered_1.5Healthy_adjacent_no_yesorderedMono.rds")
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot_cell_trajectory(monoObj,col="anno2")
+All samples trajectory
+
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=9}
+#plotMonocleResults(monoObj,"absorptive","all")
+print("Anno1")
+plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno1)
+print("Anno2")
+plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno2)
+meta = pData(monoObj)
+kable(table(meta$anno2,meta$State),caption="anno2 and State")
+print("Anno1")
+    
+ggplot(meta,aes(y=anno1,x=Pseudotime,color=State))+geom_point()
+    
+print("Anno2")
+    
+ggplot(meta,aes(y=anno2,x=Pseudotime,color=State))+geom_point()
+    
+print("Inf status")
+      
+ggplot(meta,aes(y=inflammation_status,x=Pseudotime,color=State))+geom_point()
+      
+print("Stem")
+    
+plot_cell_trajectory(monoObj, markers = stem, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
+
+    
+    
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+### Healthy{.tabset}
+
+```{r,echo=FALSE,warning=FALSE}
+monoObj=readRDS("../../helmsley/TI_Aborptive/Sep/TI_epi_reclustered_HealthyorderedMono.rds")
+```
+
+
+
+Healthy trajectory
+
+
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=9}
+print("Anno1")
+plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno1)
+print("Anno2")
+plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno2)
+
+meta = pData(monoObj)
+kable(table(meta$anno2,meta$State),caption="anno2 and State")
+print("Anno1")
+ggplot(meta,aes(y=anno1,x=Pseudotime,color=State))+geom_point()
+print("Anno2")
+ggplot(meta,aes(y=anno2,x=Pseudotime,color=State))+geom_point()
+print("Stem")
+plot_cell_trajectory(monoObj, markers = stem, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
+print("EC markers")
+plot_cell_trajectory(monoObj, markers = ec_markers, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
+```
+
+
+### non-Inf {.tabset}
+
+```{r,echo=FALSE,warning=FALSE}
+monoObj=readRDS("../../helmsley/TI_Aborptive/Sep/TI_epi_reclustered_adjacent_noorderedMono.rds")
+```
+
+
+non-Inf trajectory
+
+
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=9}
+print("Anno1")
+plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno1)
+print("Anno2")
+plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno2)
+
+meta = pData(monoObj)
+kable(table(meta$anno2,meta$State),caption="anno2 and State")
+print("Anno1")
+ggplot(meta,aes(y=anno1,x=Pseudotime,color=State))+geom_point()
+print("Anno2")
+ggplot(meta,aes(y=anno2,x=Pseudotime,color=State))+geom_point()
+print("Stem")
+plot_cell_trajectory(monoObj, markers = stem, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
+print("EC markers")
+plot_cell_trajectory(monoObj, markers = ec_markers, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
+```
+
+
+
+### Inf {.tabset}
+```{r,echo=FALSE,warning=FALSE}
+monoObj=readRDS("../../helmsley/TI_Aborptive/Sep/TI_epi_reclustered_yesorderedMono.rds")
+```
+
+
+Inf trajectory
+
+
+
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=9}
+print("Anno1")
+plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno1)
+print("Anno2")
+plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno2)
+
+meta = pData(monoObj)
+kable(table(meta$anno2,meta$State),caption="anno2 and State")
+print("Anno1")
+ggplot(meta,aes(y=anno1,x=Pseudotime,color=State))+geom_point()
+print("Anno2")
+ggplot(meta,aes(y=anno2,x=Pseudotime,color=State))+geom_point()
+print("Stem")
+plot_cell_trajectory(monoObj, markers = stem, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
+print("EC markers")
+plot_cell_trajectory(monoObj, markers = ec_markers, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
+
+```
+
+## Secretory {.tabset}
+
+### All cells 
+
+
+```{r,echo=FALSE,warning=FALSE}
+monoObj=readRDS("../../helmsley/TI_Secretory/TI_epi_reclustered_orderedMono.rds")
+```
+
+All samples trajectory
+
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=9}
+print("Anno1")
+plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno1)
+print("Anno2")
+plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno2)
+
+meta = pData(monoObj)
+kable(table(meta$anno2,meta$State),caption="anno2 and State")
+print("Anno1")
+ggplot(meta,aes(y=anno1,x=Pseudotime,color=State))+geom_point()
+print("Anno2")
+ggplot(meta,aes(y=anno2,x=Pseudotime,color=State))+geom_point()
+print("Inf status")
+ggplot(meta,aes(y=inflammation_status,x=Pseudotime,color=State))+geom_point()
+print("Goblet")
+plot_cell_trajectory(monoObj, markers = goblet, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
+print("Goblet cluster markers")
+plot_cell_trajectory(monoObj, markers = goblet_markers, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
+```
+
+## Other {.tabset}
+
+### All cells 
+
+
+```{r,echo=FALSE,warning=FALSE}
+monoObj=readRDS("../../helmsley/TI_Other/TI_epi_reclustered_orderedMono.rds")
+```
+
+All samples trajectory
+
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=9}
+print("Anno1")
+plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno1)
+print("Anno2")
+plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno2)
+meta = pData(monoObj)
+kable(table(meta$anno2,meta$State),caption="anno2 and State")
+print("Anno1")
+ggplot(meta,aes(y=anno1,x=Pseudotime,color=State))+geom_point()
+print("Anno2")
+ggplot(meta,aes(y=anno2,x=Pseudotime,color=State))+geom_point()
+print("Inf status")
+ggplot(meta,aes(y=inflammation_status,x=Pseudotime,color=State))+geom_point()
+print("Stem")
+plot_cell_trajectory(monoObj, markers = stem, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
+```
