@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(monocle)
 library(knitr)
 library(ggplot2)
+library(patchwork)
 
 stem <- c( "LGR5", "ASCL2", "SMOC2", "RGMB", "OLFM4")
 goblet <- c("CLCA1", "SPDEF", "FCGBP", "ZG16", "MUC2")
@@ -25,35 +26,18 @@ ec_markers=c("SLC12A2","OLFM4","APOC3","APOA4","APOA1","FABP6","FABP2","ANPEP","
 goblet_markers=c("FFAR4","CD177","BEST2","KLK1","FCGBP","TFF1","ZG16","WFDC2","RETNLB","SPDEF","REG4","MUC2","TFF3","CLCA1","SPINK4","ITLN1")
 
 plotMonocleResults=function(monoObj,type="absorptive",cells="all"){
-    index=1
     plist=list()
-    plist[[index]]=plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno1)
-    index=index+1
-    plist[[index]]=plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno2)
-    index=index+1
+    plist[['anno1']]=plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno1)+ggtitle("Anno1")
+    plist[['anno2']]=plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno2)+ggtitle("Anno2")
     meta = pData(monoObj)
-    kable(table(meta$anno2,meta$State),caption="anno2 and State")
-    plist[[index]]==ggplot(meta,aes(y=anno1,x=Pseudotime,color=State))+geom_point()
-    index=index+1
-    plist[[index]]==ggplot(meta,aes(y=anno2,x=Pseudotime,color=State))+geom_point()
-    index=index+1
-    if(cells=="all"){
-    plist[[index]]==ggplot(meta,aes(y=inflammation_status,x=Pseudotime,color=State))+geom_point()
-    index=index+1
-    
-    }
-    plist[[index]]=plot_cell_trajectory(monoObj, markers = stem, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
-    index=index+1
-    if(type=="absorptive"){
-      plist[[index]]=plot_cell_trajectory(monoObj, markers = ec_markers, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
-    index=index+1
-    }
-    if(type=="goblet"){
-      
-    }
-    if(type=="other"){
-      
-    }
+    #kable(table(meta$anno2,meta$State),caption="anno2 and State")
+    plist[['anno1_v']]=ggplot(meta,aes(y=anno1,x=Pseudotime,color=State)) + geom_violin(orientation='y') + geom_jitter()+ggtitle("Anno1")
+    plist[['anno2_v']]=ggplot(meta,aes(y=anno2,x=Pseudotime,color=State))+ geom_violin(orientation='y') + geom_jitter()+ggtitle("Anno2")
+    plist[['inf_status']]=ggplot(meta,aes(y=inflammation_status,x=Pseudotime,color=State))+ geom_violin(orientation='y') + geom_jitter()+ggtitle("Inf status")
+    plist[['stem']]=plot_cell_trajectory(monoObj, markers = stem, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)+ggtitle("Stem markers")
+      plist[['ec']]=plot_cell_trajectory(monoObj, markers = ec_markers, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)+ggtitle("EC markers")
+      plist[['goblet']]=plot_cell_trajectory(monoObj, markers = goblet, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)+ggtitle("Goblet celltype markers")
+      plist[['goblet1']]=plot_cell_trajectory(monoObj, markers = goblet_markers, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)+ggtitle("Goblet additional markers")
     return(plist)
 }
 ```
@@ -66,132 +50,50 @@ plotMonocleResults=function(monoObj,type="absorptive",cells="all"){
 
 ### All cells {.tabset}
 
-
-```{r,echo=FALSE,warning=FALSE}
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
 monoObj=readRDS("../../helmsley/TI_Aborptive/TI_epi_reclustered_1.5Healthy_adjacent_no_yesorderedMono.rds")
-```
-
-
-
-All samples trajectory
-
-```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=9}
-#plotMonocleResults(monoObj,"absorptive","all")
-print("Anno1")
-plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno1)
-print("Anno2")
-plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno2)
+plist=plotMonocleResults(monoObj,"absorptive","all")
+plist[['anno1']]+plist[['anno2']]
+plist[['anno1_v']]+plist[['anno2_v']]  
+plist[['inf_status']]
+plist[['stem']]+plist[['ec']]
 meta = pData(monoObj)
 kable(table(meta$anno2,meta$State),caption="anno2 and State")
-print("Anno1")
-    
-ggplot(meta,aes(y=anno1,x=Pseudotime,color=State))+geom_point()
-    
-print("Anno2")
-    
-ggplot(meta,aes(y=anno2,x=Pseudotime,color=State))+geom_point()
-    
-print("Inf status")
-      
-ggplot(meta,aes(y=inflammation_status,x=Pseudotime,color=State))+geom_point()
-      
-print("Stem")
-    
-plot_cell_trajectory(monoObj, markers = stem, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
-
-    
-    
 ```
 
 
 
 ### Healthy{.tabset}
 
-```{r,echo=FALSE,warning=FALSE}
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
 monoObj=readRDS("../../helmsley/TI_Aborptive/Sep/TI_epi_reclustered_HealthyorderedMono.rds")
-```
-
-
-
-Healthy trajectory
-
-
-```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=9}
-print("Anno1")
-plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno1)
-print("Anno2")
-plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno2)
-
-meta = pData(monoObj)
-kable(table(meta$anno2,meta$State),caption="anno2 and State")
-print("Anno1")
-ggplot(meta,aes(y=anno1,x=Pseudotime,color=State))+geom_point()
-print("Anno2")
-ggplot(meta,aes(y=anno2,x=Pseudotime,color=State))+geom_point()
-print("Stem")
-plot_cell_trajectory(monoObj, markers = stem, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
-print("EC markers")
-plot_cell_trajectory(monoObj, markers = ec_markers, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
+plist=plotMonocleResults(monoObj,"absorptive","all")
+plist[['anno1']]+plist[['anno2']]
+plist[['anno1_v']]+plist[['anno2_v']] 
+plist[['stem']]+plist[['ec']]
 ```
 
 
 ### non-Inf {.tabset}
 
-```{r,echo=FALSE,warning=FALSE}
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
 monoObj=readRDS("../../helmsley/TI_Aborptive/Sep/TI_epi_reclustered_adjacent_noorderedMono.rds")
-```
 
-
-non-Inf trajectory
-
-
-```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=9}
-print("Anno1")
-plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno1)
-print("Anno2")
-plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno2)
-
-meta = pData(monoObj)
-kable(table(meta$anno2,meta$State),caption="anno2 and State")
-print("Anno1")
-ggplot(meta,aes(y=anno1,x=Pseudotime,color=State))+geom_point()
-print("Anno2")
-ggplot(meta,aes(y=anno2,x=Pseudotime,color=State))+geom_point()
-print("Stem")
-plot_cell_trajectory(monoObj, markers = stem, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
-print("EC markers")
-plot_cell_trajectory(monoObj, markers = ec_markers, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
+plist=plotMonocleResults(monoObj,"absorptive","all")
+plist[['anno1']]+plist[['anno2']]
+plist[['anno1_v']]+plist[['anno2_v']] 
+plist[['stem']]+plist[['ec']]
 ```
 
 
 
 ### Inf {.tabset}
-```{r,echo=FALSE,warning=FALSE}
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
 monoObj=readRDS("../../helmsley/TI_Aborptive/Sep/TI_epi_reclustered_yesorderedMono.rds")
-```
-
-
-Inf trajectory
-
-
-
-```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=9}
-print("Anno1")
-plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno1)
-print("Anno2")
-plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno2)
-
-meta = pData(monoObj)
-kable(table(meta$anno2,meta$State),caption="anno2 and State")
-print("Anno1")
-ggplot(meta,aes(y=anno1,x=Pseudotime,color=State))+geom_point()
-print("Anno2")
-ggplot(meta,aes(y=anno2,x=Pseudotime,color=State))+geom_point()
-print("Stem")
-plot_cell_trajectory(monoObj, markers = stem, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
-print("EC markers")
-plot_cell_trajectory(monoObj, markers = ec_markers, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
-
+plist=plotMonocleResults(monoObj,"absorptive","all")
+plist[['anno1']]+plist[['anno2']]
+plist[['anno1_v']]+plist[['anno2_v']] 
+plist[['stem']]+plist[['ec']]
 ```
 
 ## Secretory {.tabset}
@@ -199,56 +101,113 @@ plot_cell_trajectory(monoObj, markers = ec_markers, use_color_gradient = TRUE,ce
 ### All cells 
 
 
-```{r,echo=FALSE,warning=FALSE}
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
 monoObj=readRDS("../../helmsley/TI_Secretory/TI_epi_reclustered_orderedMono.rds")
+plist=plotMonocleResults(monoObj,"absorptive","all")
+plist[['anno1']]+plist[['anno2']]
+plist[['anno1_v']]+plist[['anno2_v']] 
+plist[['inf_status']]+plist[['stem']]
+plist[['goblet']]+plist[['gotlet1']]
+
 ```
 
-All samples trajectory
 
-```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=9}
-print("Anno1")
-plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno1)
-print("Anno2")
-plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno2)
 
-meta = pData(monoObj)
-kable(table(meta$anno2,meta$State),caption="anno2 and State")
-print("Anno1")
-ggplot(meta,aes(y=anno1,x=Pseudotime,color=State))+geom_point()
-print("Anno2")
-ggplot(meta,aes(y=anno2,x=Pseudotime,color=State))+geom_point()
-print("Inf status")
-ggplot(meta,aes(y=inflammation_status,x=Pseudotime,color=State))+geom_point()
-print("Goblet")
-plot_cell_trajectory(monoObj, markers = goblet, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
-print("Goblet cluster markers")
-plot_cell_trajectory(monoObj, markers = goblet_markers, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
+
+### Healthy 
+
+
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
+monoObj=readRDS("../../helmsley/TI_Secretory/Sep/TI_epi_reclustered_HealthyorderedMono.rds")
+plist=plotMonocleResults(monoObj,"absorptive","all")
+plist[['anno1']]+plist[['anno2']]
+plist[['anno1_v']]+plist[['anno2_v']] 
+plist[['stem']]
+plist[['goblet']]+plist[['gotlet1']]
+
 ```
+
+
+
+### non-Inf 
+
+
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
+monoObj=readRDS("../../helmsley/TI_Secretory/Sep/TI_epi_reclustered_adjacent_noorderedMono.rds")
+plist=plotMonocleResults(monoObj,"absorptive","all")
+plist[['anno1']]+plist[['anno2']]
+plist[['anno1_v']]+plist[['anno2_v']] 
+plist[['stem']]
+plist[['goblet']]+plist[['gotlet1']]
+
+```
+
+
+
+
+### Inf 
+
+
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
+monoObj=readRDS("../../helmsley/TI_Secretory/Sep/TI_epi_reclustered_yesorderedMono.rds")
+plist=plotMonocleResults(monoObj,"absorptive","all")
+plist[['anno1']]+plist[['anno2']]
+plist[['anno1_v']]+plist[['anno2_v']] 
+plist[['stem']]
+plist[['goblet']]+plist[['gotlet1']]
+
+```
+
+
 
 ## Other {.tabset}
 
 ### All cells 
 
-
-```{r,echo=FALSE,warning=FALSE}
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
 monoObj=readRDS("../../helmsley/TI_Other/TI_epi_reclustered_orderedMono.rds")
+plist=plotMonocleResults(monoObj,"absorptive","all")
+plist[['anno1']]+plist[['anno2']]
+plist[['anno1_v']]+plist[['anno2_v']] 
+plist[['stem']]
 ```
 
-All samples trajectory
 
-```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=9}
-print("Anno1")
-plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno1)
-print("Anno2")
-plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno2)
-meta = pData(monoObj)
-kable(table(meta$anno2,meta$State),caption="anno2 and State")
-print("Anno1")
-ggplot(meta,aes(y=anno1,x=Pseudotime,color=State))+geom_point()
-print("Anno2")
-ggplot(meta,aes(y=anno2,x=Pseudotime,color=State))+geom_point()
-print("Inf status")
-ggplot(meta,aes(y=inflammation_status,x=Pseudotime,color=State))+geom_point()
-print("Stem")
-plot_cell_trajectory(monoObj, markers = stem, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)
+
+### Healthy 
+
+
+
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
+monoObj=readRDS("../../helmsley/TI_Other/TI_epi_reclustered_HealthyorderedMono.rds")
+plist=plotMonocleResults(monoObj,"absorptive","all")
+plist[['anno1']]+plist[['anno2']]
+plist[['anno1_v']]+plist[['anno2_v']] 
+plist[['stem']]
+```
+
+
+### non-Inf 
+
+
+
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
+monoObj=readRDS("../../helmsley/TI_Other/TI_epi_reclustered_adjacent_noorderedMono.rds")
+plist=plotMonocleResults(monoObj,"absorptive","all")
+plist[['anno1']]+plist[['anno2']]
+plist[['anno1_v']]+plist[['anno2_v']] 
+plist[['stem']]
+```
+
+
+### Inf 
+
+
+
+```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
+monoObj=readRDS("../../helmsley/TI_Other/TI_epi_reclustered_yesorderedMono.rds")
+plist=plotMonocleResults(monoObj,"absorptive","all")
+plist[['anno1']]+plist[['anno2']]
+plist[['anno1_v']]+plist[['anno2_v']] 
+plist[['stem']]
 ```
