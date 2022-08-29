@@ -13,32 +13,93 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(monocle)
+```
+
+```{r echo=FALSE}
+#library(monocle)
 library(knitr)
 library(ggplot2)
 library(patchwork)
+library(scales)
+library(VGAM)
+#library(monocle3)
 
 stem <- c( "LGR5", "ASCL2", "SMOC2", "RGMB", "OLFM4")
 goblet <- c("CLCA1", "SPDEF", "FCGBP", "ZG16", "MUC2")
 
-ec_markers=c("SLC12A2","OLFM4","APOC3","APOA4","APOA1","FABP6","FABP2","ANPEP","RBP2","ALDOB","DPEP1","HLA-DRB1","HLA-DRA","GSTA2","GSTA1","DMBT1","REG1A")
+ec_markers=c("SLC12A2","APOC3","APOA4","APOA1","FABP6","FABP2","ANPEP","RBP2","ALDOB","DPEP1","HLA-DRB1","HLA-DRA","GSTA2","GSTA1","DMBT1","REG1A")
 
 goblet_markers=c("FFAR4","CD177","BEST2","KLK1","FCGBP","TFF1","ZG16","WFDC2","RETNLB","SPDEF","REG4","MUC2","TFF3","CLCA1","SPINK4","ITLN1")
+paneth <- c("DEFA5", "DEFA6", "REG3G")
+ta <- c("MKI67", "TOP2A", "PCNA")
+best4 <- c("BEST4",  "OTOP2", "CA7")
+enterocytes <- c("RBP2", "ANPEP", "FABP2")
+colonocytes <- c("CA2", "SLC26A2", "FABP1")
+eec <- c("CHGA", "CHGB", "NEUROD1")
+M_cells <- c("SPIB", "CCL20", "GP2")
+Tuft <- c("POU2F3", "LRMP", "TRPM5")
+Best2_goblet <- c("KLK15", "KLK3", "WFDC2", "WFDC3")
+```
 
+```{r echo=FALSE, warning=FALSE}
 plotMonocleResults=function(monoObj,type="absorptive",cells="all"){
     plist=list()
-    plist[['anno1']]=plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno1)+ggtitle("Anno1")
-    plist[['anno2']]=plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno2)+ggtitle("Anno2")
-    meta = pData(monoObj)
+    plist[['anno1']]=monocle::plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno1)+ggtitle("Anno1")
+    plist[['anno2']]=monocle::plot_cell_trajectory(monoObj,col="State",show_branch_points = TRUE,cell_size = 0.4,state_number_size = 1)+facet_wrap(~anno2)+ggtitle("Anno2")
+    #meta = monocle::pData(monoObj)
+    meta =  monoObj@phenoData@data
     #kable(table(meta$anno2,meta$State),caption="anno2 and State")
     plist[['anno1_v']]=ggplot(meta,aes(y=anno1,x=Pseudotime,color=State)) + geom_violin(orientation='y') + geom_jitter()+ggtitle("Anno1")
     plist[['anno2_v']]=ggplot(meta,aes(y=anno2,x=Pseudotime,color=State))+ geom_violin(orientation='y') + geom_jitter()+ggtitle("Anno2")
     plist[['inf_status']]=ggplot(meta,aes(y=inflammation_status,x=Pseudotime,color=State))+ geom_violin(orientation='y') + geom_jitter()+ggtitle("Inf status")
-    plist[['stem']]=plot_cell_trajectory(monoObj, markers = stem, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)+ggtitle("Stem markers")
-      plist[['ec']]=plot_cell_trajectory(monoObj, markers = ec_markers, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)+ggtitle("EC markers")
-      plist[['goblet']]=plot_cell_trajectory(monoObj, markers = goblet, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)+ggtitle("Goblet celltype markers")
-      plist[['goblet1']]=plot_cell_trajectory(monoObj, markers = goblet_markers, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)+ggtitle("Goblet additional markers")
+    plist[['stem_p']]=monocle::plot_genes_in_pseudotime(monoObj[intersect(rownames(monoObj),stem),], color_by="State")
+    plist[['ec_p']]=monocle::plot_genes_in_pseudotime(monoObj[intersect(rownames(monoObj),ec_markers),], color_by="State")
+    plist[['goblet_p']]=monocle::plot_genes_in_pseudotime(monoObj[intersect(rownames(monoObj),goblet),], color_by="State")
+    plist[['goblet1_p']]=monocle::plot_genes_in_pseudotime(monoObj[intersect(rownames(monoObj),goblet_markers),], color_by="State")
+    plist[['other_p']]=monocle::plot_genes_in_pseudotime(monoObj[intersect(rownames(monoObj),c(paneth,Tuft,eec)),], color_by="State")
+    
+    plist[['stem']]=monocle::plot_cell_trajectory(monoObj, markers = stem, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)+ggtitle("Stem markers")
+      plist[['ec']]=monocle::plot_cell_trajectory(monoObj, markers = ec_markers, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)+ggtitle("EC markers")
+      plist[['goblet']]=monocle::plot_cell_trajectory(monoObj, markers = goblet, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)+ggtitle("Goblet celltype markers")
+      plist[['goblet1']]=monocle::plot_cell_trajectory(monoObj, markers = goblet_markers, use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)+ggtitle("Goblet additional markers")
+      plist[['other']]=monocle::plot_cell_trajectory(monoObj, markers = c(paneth,Tuft,eec), use_color_gradient = TRUE,cell_size=0.4,state_number_size=0.5)+ggtitle("Goblet additional markers")
     return(plist)
+}
+
+mono3=function(cds){
+  plist=list()
+  #plist[["pseduotime"]] = monocle3::plot_cells(cds,
+	#		   color_cells_by = "pseudotime",
+	#		   label_cell_groups=FALSE,
+	#		   label_leaves=FALSE,
+	#		   label_branch_points=TRUE, 
+	#		   graph_label_size=3)
+	plist[["anno1"]] = monocle3::plot_cells(cds,
+			   color_cells_by = "anno1",
+			   group_cells_by = "cluster",
+			   #label_groups_by_cluster = TRUE,
+			   label_cell_groups=FALSE,
+			   label_leaves=TRUE,
+			   label_branch_points=TRUE, group_label_size =4,labels_per_group=1,
+			   graph_label_size=3)
+  
+	plist[["anno2"]] = monocle3::plot_cells(cds,
+			   color_cells_by = "anno2",
+			   group_cells_by = "cluster",
+			   #label_groups_by_cluster = TRUE,
+			   label_cell_groups=FALSE,
+			   label_leaves=TRUE,
+			   label_branch_points=TRUE, group_label_size =4,labels_per_group=1,
+			   graph_label_size=3)
+	
+	plist[["partition"]] = monocle3::plot_cells(cds,
+			   color_cells_by = "partition",
+			   label_cell_groups=FALSE,
+			   label_leaves=FALSE,
+			   label_branch_points=TRUE,
+			   graph_label_size=3)
+	return(plist)
+	
 }
 ```
 
@@ -50,15 +111,37 @@ plotMonocleResults=function(monoObj,type="absorptive",cells="all"){
 
 ### All cells {.tabset}
 
-```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
-monoObj=readRDS("../../helmsley/TI_Aborptive/TI_epi_reclustered_1.5Healthy_adjacent_no_yesorderedMono.rds")
+```{r echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
+name="../../helmsley/TI_Aborptive/TI_epi_reclustered_1.5Healthy_adjacent_no_yes"
+monoObj=readRDS(paste0(name,"orderedMono.rds"))
 plist=plotMonocleResults(monoObj,"absorptive","all")
 plist[['anno1']]+plist[['anno2']]
 plist[['anno1_v']]+plist[['anno2_v']]  
 plist[['inf_status']]
-plist[['stem']]+plist[['ec']]
-meta = pData(monoObj)
-kable(table(meta$anno2,meta$State),caption="anno2 and State")
+#plist[['stem']]+plist[['ec']]
+plist[['stem_p']]+plist[['ec_p']]
+
+#meta = monoObj@phenoData@data
+#kable(table(meta$anno2,meta$State),caption="anno2 and State")
+
+```
+
+Branch Analysis 
+```{r, results = "asis"}
+for(i in 1:length(monoObj@auxOrderingData$DDRTree$branch_points)){
+    cat(paste0("![](",name,"_branch",i,"_","beam.png)"), "\n")
+    cat("\n\n\\pagebreak\n")
+}
+```
+
+Monocle 3
+```{r, echo=TRUE,warning=FALSE,fig.height=10,fig.width=10}
+name="../../helmsley/TI_Aborptive/TI_epi_mono3_Healthy_adjacent_no_yes"
+cds=readRDS(paste0(name,"_monocle3_ordered.rds"))
+m3=mono3(cds)
+#m3[['partition']]
+m3[['anno1']]
+m3[['anno2']]
 ```
 
 
@@ -66,34 +149,103 @@ kable(table(meta$anno2,meta$State),caption="anno2 and State")
 ### Healthy{.tabset}
 
 ```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
-monoObj=readRDS("../../helmsley/TI_Aborptive/Sep/TI_epi_reclustered_HealthyorderedMono.rds")
+name="../../helmsley/TI_Aborptive/Sep/TI_epi_reclustered_Healthy"
+monoObj=readRDS(paste0(name,"orderedMono.rds"))
 plist=plotMonocleResults(monoObj,"absorptive","all")
 plist[['anno1']]+plist[['anno2']]
 plist[['anno1_v']]+plist[['anno2_v']] 
-plist[['stem']]+plist[['ec']]
+#plist[['stem']]+plist[['ec']]
+plist[['stem_p']]+plist[['ec_p']]
+#plist2=branchAnalysis(monoObj,name)
+#wrap_plots(plist2)
 ```
+
+
+Branch Analysis 
+```{r, results = "asis"}
+for(i in 1:length(monoObj@auxOrderingData$DDRTree$branch_points)){
+    cat(paste0("![](",name,"_branch",i,"_","beam.png)"), "\n")
+    cat("\n\n\\pagebreak\n")
+}
+```
+
+Monocle 3
+```{r, echo=TRUE,warning=FALSE,fig.height=10,fig.width=10}
+name="../../helmsley/TI_Aborptive/TI_epi_mono3_Healthy"
+cds=readRDS(paste0(name,"_monocle3_ordered.rds"))
+m3=mono3(cds)
+#m3[['partition']]
+m3[['anno1']]
+m3[['anno2']]
+```
+
 
 
 ### non-Inf {.tabset}
 
 ```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
-monoObj=readRDS("../../helmsley/TI_Aborptive/Sep/TI_epi_reclustered_adjacent_noorderedMono.rds")
+name="../../helmsley/TI_Aborptive/Sep/TI_epi_reclustered_adjacent_no"
+monoObj=readRDS(paste0(name,"orderedMono.rds"))
 
 plist=plotMonocleResults(monoObj,"absorptive","all")
 plist[['anno1']]+plist[['anno2']]
 plist[['anno1_v']]+plist[['anno2_v']] 
-plist[['stem']]+plist[['ec']]
+#plist[['stem']]+plist[['ec']]
+plist[['stem_p']]+plist[['ec_p']]
+#plist2=branchAnalysis(monoObj,name)
+#wrap_plots(plist2)
 ```
 
+
+Branch Analysis 
+```{r, results = "asis"}
+for(i in 1:length(monoObj@auxOrderingData$DDRTree$branch_points)){
+    cat(paste0("![](",name,"_branch",i,"_","beam.png)"), "\n")
+    cat("\n\n\\pagebreak\n")
+}
+```
+
+Monocle 3
+```{r, echo=TRUE,warning=FALSE,fig.height=10,fig.width=10}
+name="../../helmsley/TI_Aborptive/TI_epi_mono3_adjacent_no"
+cds=readRDS(paste0(name,"_monocle3_ordered.rds"))
+m3=mono3(cds)
+#m3[['partition']]
+m3[['anno1']]
+m3[['anno2']]
+```
 
 
 ### Inf {.tabset}
 ```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
-monoObj=readRDS("../../helmsley/TI_Aborptive/Sep/TI_epi_reclustered_yesorderedMono.rds")
+name="../../helmsley/TI_Aborptive/Sep/TI_epi_reclustered_yes"
+monoObj=readRDS(paste0(name,"orderedMono.rds"))
 plist=plotMonocleResults(monoObj,"absorptive","all")
 plist[['anno1']]+plist[['anno2']]
 plist[['anno1_v']]+plist[['anno2_v']] 
-plist[['stem']]+plist[['ec']]
+#plist[['stem']]+plist[['ec']]
+plist[['stem_p']]+plist[['ec_p']]
+#plist2=branchAnalysis(monoObj,name)
+#wrap_plots(plist2)
+```
+
+
+Branch Analysis 
+```{r, results = "asis"}
+for(i in 1:length(monoObj@auxOrderingData$DDRTree$branch_points)){
+    cat(paste0("![](",name,"_branch",i,"_","beam.png)"), "\n")
+    cat("\n\n\\pagebreak\n")
+}
+```
+
+Monocle 3
+```{r, echo=TRUE,warning=FALSE,fig.height=10,fig.width=10}
+name="../../helmsley/TI_Aborptive/TI_epi_mono3_yes"
+cds=readRDS(paste0(name,"_monocle3_ordered.rds"))
+m3=mono3(cds)
+#m3[['partition']]
+m3[['anno1']]
+m3[['anno2']]
 ```
 
 ## Secretory {.tabset}
@@ -102,46 +254,112 @@ plist[['stem']]+plist[['ec']]
 
 
 ```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
-monoObj=readRDS("../../helmsley/TI_Secretory/TI_epi_reclustered_orderedMono.rds")
+name="../../helmsley/TI_Secretory/TI_epi_reclustered_"
+monoObj=readRDS(paste0(name,"orderedMono.rds"))
 plist=plotMonocleResults(monoObj,"absorptive","all")
 plist[['anno1']]+plist[['anno2']]
 plist[['anno1_v']]+plist[['anno2_v']] 
-plist[['inf_status']]+plist[['stem']]
-plist[['goblet']]+plist[['gotlet1']]
+plist[['inf_status']]
+#plist[['stem']]+plist[['goblet']]+plist[['gotlet1']]
+plist[['stem_p']]+plist[['goblet_p']]+plist[['gotlet1_p']]
+#plist2=branchAnalysis(monoObj,name)
+#wrap_plots(plist2)
 
 ```
 
 
+Branch Analysis 
+```{r, results = "asis"}
+for(i in 1:length(monoObj@auxOrderingData$DDRTree$branch_points)){
+    cat(paste0("![](",name,"_branch",i,"_","beam.png)"), "\n")
+    cat("\n\n\\pagebreak\n")
+}
+```
+
+Monocle 3
+```{r, echo=TRUE,warning=FALSE,fig.height=10,fig.width=10}
+name="../../helmsley/TI_Secretory/TI_epi_mono3_Healthy_adjacent_no_yes"
+cds=readRDS(paste0(name,"_monocle3_ordered.rds"))
+m3=mono3(cds)
+
+#m3[['partition']]
+m3[['anno1']]
+m3[['anno2']]
+```
 
 
 ### Healthy 
 
 
 ```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
-monoObj=readRDS("../../helmsley/TI_Secretory/Sep/TI_epi_reclustered_HealthyorderedMono.rds")
+name="../../helmsley/TI_Secretory/Sep/TI_epi_reclustered_Healthy"
+monoObj=readRDS(paste0(name,"orderedMono.rds"))
 plist=plotMonocleResults(monoObj,"absorptive","all")
 plist[['anno1']]+plist[['anno2']]
 plist[['anno1_v']]+plist[['anno2_v']] 
-plist[['stem']]
-plist[['goblet']]+plist[['gotlet1']]
+#plist[['stem']]+plist[['goblet']]+plist[['gotlet1']]
+plist[['stem_p']]+plist[['goblet_p']]+plist[['gotlet1_p']]
+#plist2=branchAnalysis(monoObj,name)
+#wrap_plots(plist2)
 
 ```
 
+
+Branch Analysis 
+```{r, results = "asis"}
+for(i in 1:length(monoObj@auxOrderingData$DDRTree$branch_points)){
+    cat(paste0("![](",name,"_branch",i,"_","beam.png)"), "\n")
+    cat("\n\n\\pagebreak\n")
+}
+```
+
+Monocle 3
+```{r, echo=TRUE,warning=FALSE,fig.height=10,fig.width=10}
+name="../../helmsley/TI_Secretory/TI_epi_mono3_Healthy"
+cds=readRDS(paste0(name,"_monocle3_ordered.rds"))
+m3=mono3(cds)
+
+#m3[['partition']]
+m3[['anno1']]
+m3[['anno2']]
+```
 
 
 ### non-Inf 
 
 
 ```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
-monoObj=readRDS("../../helmsley/TI_Secretory/Sep/TI_epi_reclustered_adjacent_noorderedMono.rds")
+name="../../helmsley/TI_Secretory/Sep/TI_epi_reclustered_adjacent_no"
+monoObj=readRDS(paste0(name,"orderedMono.rds"))
 plist=plotMonocleResults(monoObj,"absorptive","all")
 plist[['anno1']]+plist[['anno2']]
 plist[['anno1_v']]+plist[['anno2_v']] 
-plist[['stem']]
-plist[['goblet']]+plist[['gotlet1']]
+#plist[['stem']]+plist[['goblet']]+plist[['gotlet1']]
+plist[['stem_p']]+plist[['goblet_p']]+plist[['gotlet1_p']]
+#plist2=branchAnalysis(monoObj,name)
+#wrap_plots(plist2)
 
 ```
 
+
+Branch Analysis 
+```{r, results = "asis"}
+for(i in 1:length(monoObj@auxOrderingData$DDRTree$branch_points)){
+    cat(paste0("![](",name,"_branch",i,"_","beam.png)"), "\n")
+    cat("\n\n\\pagebreak\n")
+}
+```
+
+Monocle 3
+```{r, echo=TRUE,warning=FALSE,fig.height=10,fig.width=10}
+name="../../helmsley/TI_Secretory/TI_epi_mono3_adjacent_no"
+cds=readRDS(paste0(name,"_monocle3_ordered.rds"))
+m3=mono3(cds)
+
+#m3[['partition']]
+m3[['anno1']]
+m3[['anno2']]
+```
 
 
 
@@ -149,15 +367,37 @@ plist[['goblet']]+plist[['gotlet1']]
 
 
 ```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
-monoObj=readRDS("../../helmsley/TI_Secretory/Sep/TI_epi_reclustered_yesorderedMono.rds")
+name="../../helmsley/TI_Secretory/Sep/TI_epi_reclustered_yes"
+monoObj=readRDS(paste0(name,"orderedMono.rds"))
 plist=plotMonocleResults(monoObj,"absorptive","all")
 plist[['anno1']]+plist[['anno2']]
 plist[['anno1_v']]+plist[['anno2_v']] 
-plist[['stem']]
-plist[['goblet']]+plist[['gotlet1']]
+#plist[['stem']]+plist[['goblet']]+plist[['gotlet1']]
+plist[['stem_p']]+plist[['goblet_p']]+plist[['gotlet1_p']]
+#plist2=branchAnalysis(monoObj,name)
+#wrap_plots(plist2)
 
 ```
 
+
+Branch Analysis 
+```{r, results = "asis"}
+for(i in 1:length(monoObj@auxOrderingData$DDRTree$branch_points)){
+    cat(paste0("![](",name,"_branch",i,"_","beam.png)"), "\n")
+    cat("\n\n\\pagebreak\n")
+}
+```
+
+Monocle 3
+```{r, echo=TRUE,warning=FALSE,fig.height=10,fig.width=10}
+name="../../helmsley/TI_Secretory/TI_epi_mono3_yes"
+cds=readRDS(paste0(name,"_monocle3_ordered.rds"))
+m3=mono3(cds)
+
+#m3[['partition']]
+m3[['anno1']]
+m3[['anno2']]
+```
 
 
 ## Other {.tabset}
@@ -165,13 +405,37 @@ plist[['goblet']]+plist[['gotlet1']]
 ### All cells 
 
 ```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
-monoObj=readRDS("../../helmsley/TI_Other/TI_epi_reclustered_orderedMono.rds")
+name="../../helmsley/TI_Other/TI_epi_reclustered_"
+monoObj=readRDS(paste0(name,"orderedMono.rds"))
 plist=plotMonocleResults(monoObj,"absorptive","all")
 plist[['anno1']]+plist[['anno2']]
 plist[['anno1_v']]+plist[['anno2_v']] 
-plist[['stem']]
+plist[['inf_status']]
+#plist[['stem']]+plist[['other']]
+plist[['stem_p']]+plist[['other_p']]
+#plist2=branchAnalysis(monoObj,name)
+#wrap_plots(plist2)
 ```
 
+
+Branch Analysis 
+```{r, results = "asis"}
+for(i in 1:length(monoObj@auxOrderingData$DDRTree$branch_points)){
+    cat(paste0("![](",name,"_branch",i,"_","beam.png)"), "\n")
+    cat("\n\n\\pagebreak\n")
+}
+```
+
+Monocle 3
+```{r, echo=TRUE,warning=FALSE,fig.height=10,fig.width=10}
+name="../../helmsley/TI_Other/TI_epi_mono3_Healthy_adjacent_no_yes"
+cds=readRDS(paste0(name,"_monocle3_ordered.rds"))
+m3=mono3(cds)
+
+#m3[['partition']]
+m3[['anno1']]
+m3[['anno2']]
+```
 
 
 ### Healthy 
@@ -179,11 +443,35 @@ plist[['stem']]
 
 
 ```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
-monoObj=readRDS("../../helmsley/TI_Other/TI_epi_reclustered_HealthyorderedMono.rds")
+name="../../helmsley/TI_Other/TI_epi_reclustered_Healthy"
+monoObj=readRDS(paste0(name,"orderedMono.rds"))
 plist=plotMonocleResults(monoObj,"absorptive","all")
 plist[['anno1']]+plist[['anno2']]
 plist[['anno1_v']]+plist[['anno2_v']] 
-plist[['stem']]
+#plist[['stem']]+plist[['other']]
+plist[['stem_p']]+plist[['other_p']]
+#plist2=branchAnalysis(monoObj,name)
+#wrap_plots(plist2)
+```
+
+
+Branch Analysis 
+```{r, results = "asis"}
+for(i in 1:length(monoObj@auxOrderingData$DDRTree$branch_points)){
+    cat(paste0("![](",name,"_branch",i,"_","beam.png)"), "\n")
+    cat("\n\n\\pagebreak\n")
+}
+```
+
+Monocle 3
+```{r, echo=TRUE,warning=FALSE,fig.height=10,fig.width=10}
+name="../../helmsley/TI_Other/TI_epi_mono3_Healthy"
+cds=readRDS(paste0(name,"_monocle3_ordered.rds"))
+m3=mono3(cds)
+
+#m3[['partition']]
+m3[['anno1']]
+m3[['anno2']]
 ```
 
 
@@ -192,11 +480,35 @@ plist[['stem']]
 
 
 ```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
-monoObj=readRDS("../../helmsley/TI_Other/TI_epi_reclustered_adjacent_noorderedMono.rds")
+name="../../helmsley/TI_Other/TI_epi_reclustered_adjacent_no"
+monoObj=readRDS(paste0(name,"orderedMono.rds"))
 plist=plotMonocleResults(monoObj,"absorptive","all")
 plist[['anno1']]+plist[['anno2']]
 plist[['anno1_v']]+plist[['anno2_v']] 
-plist[['stem']]
+#plist[['stem']]+plist[['other']]
+plist[['stem_p']]+plist[['other_p']]
+#plist2=branchAnalysis(monoObj,name)
+#wrap_plots(plist2)
+```
+
+
+Branch Analysis 
+```{r, results = "asis"}
+for(i in 1:length(monoObj@auxOrderingData$DDRTree$branch_points)){
+    cat(paste0("![](",name,"_branch",i,"_","beam.png)"), "\n")
+    cat("\n\n\\pagebreak\n")
+}
+```
+
+Monocle 3
+```{r, echo=TRUE,warning=FALSE,fig.height=10,fig.width=10}
+name="../../helmsley/TI_Other/TI_epi_mono3_adjacent_no"
+cds=readRDS(paste0(name,"_monocle3_ordered.rds"))
+m3=mono3(cds)
+
+#m3[['partition']]
+m3[['anno1']]
+m3[['anno2']]
 ```
 
 
@@ -205,9 +517,33 @@ plist[['stem']]
 
 
 ```{r, echo=FALSE,warning=FALSE,fig.height=9,fig.width=18}
-monoObj=readRDS("../../helmsley/TI_Other/TI_epi_reclustered_yesorderedMono.rds")
+name="../../helmsley/TI_Other/TI_epi_reclustered_yes"
+monoObj=readRDS(paste0(name,"orderedMono.rds"))
 plist=plotMonocleResults(monoObj,"absorptive","all")
 plist[['anno1']]+plist[['anno2']]
 plist[['anno1_v']]+plist[['anno2_v']] 
-plist[['stem']]
+#plist[['stem']]+plist[['other']]
+plist[['stem_p']]+plist[['other_p']]
+#plist2=branchAnalysis(monoObj,name)
+#wrap_plots(plist2)
+```
+
+
+Branch Analysis 
+```{r, results = "asis"}
+for(i in 1:length(monoObj@auxOrderingData$DDRTree$branch_points)){
+    cat(paste0("![](",name,"_branch",i,"_","beam.png)"), "\n")
+    cat("\n\n\\pagebreak\n")
+}
+```
+
+Monocle 3
+```{r, echo=TRUE,warning=FALSE,fig.height=10,fig.width=10}
+name="../../helmsley/TI_Other/TI_epi_mono3_yes"
+cds=readRDS(paste0(name,"_monocle3_ordered.rds"))
+m3=mono3(cds)
+#m3[['partition']]
+m3[['anno1']]
+m3[['anno2']]
+
 ```
